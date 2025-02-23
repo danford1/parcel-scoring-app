@@ -35,6 +35,13 @@ export function useMap(mapContainer) {
       name: 'parcels',
       url: '/parcel-scoring-app/data/parcels.geojson',
     },
+    {
+      name: 'borough',
+      url: '/parcel-scoring-app/data/borough.geojson',
+      layerType: 'outline',
+      lineColor: '#000000',
+      lineWidth: 2,
+    },
   ];
 
   const bounds = [
@@ -149,19 +156,98 @@ export function useMap(mapContainer) {
         }
 
         if (file.name === 'parcels') {
+          // Fetch additional GeoJSON data for scoring
+          const parcels = geojsonData.features;
 
-            map.value.addLayer({
-            id: file.name,
+          // Define weight values (these can later be made user-configurable)
+          const weights = { borough: 0.2, walking: 0.4, school: 0.1, lotSize: 0.3 };
+
+          // Function to normalize lot size (Acres)
+          const normalizeLotSize = (acres) => Math.min(100, (acres / 5) * 100);
+
+          // Apply scoring logic
+          parcels.forEach(parcel => {
+            let score = 0;
+
+            // Lot Size Score
+            const lotSize = parcel.properties.Acres || 0;
+            const lotSizeScore = normalizeLotSize(lotSize);
+
+            // Walking Accessibility Score
+            let walkingScore = 0;
+            const walkingIsochrones = geojsonFiles.find(f => f.name === 'walking-isochrones');
+
+            // Ensure it's loaded before accessing features
+            if (walkingIsochrones && walkingIsochrones.features) {
+              walkingIsochrones.features.forEach(isochrone => {
+                if (turf.booleanPointInPolygon(parcel, isochrone)) {
+                  if (isochrone.properties.AA_MINS === '10') walkingScore = 100;
+                  else if (isochrone.properties.AA_MINS === '20') walkingScore = 75;
+                  else if (isochrone.properties.AA_MINS === '30') walkingScore = 50;
+                  else if (isochrone.properties.AA_MINS === '40') walkingScore = 25;
+                }
+              });
+            } else {
+              console.warn("Walking isochrones data is missing or not loaded.");
+            }
+
+            // School Proximity Score
+            let schoolScore = 0;
+            const schoolZones = geojsonFiles.find(f => f.name === 'elementary-school-zones');
+
+            if (schoolZones && schoolZones.features) {
+              schoolZones.features.forEach(zone => {
+                if (turf.booleanPointInPolygon(parcel, zone)) {
+                  if (zone.properties.name === 'Doyle') schoolScore = 100;
+                  else if (zone.properties.name === 'Linden') schoolScore = 75;
+                  else if (zone.properties.name === 'Kutz') schoolScore = 50;
+                }
+              });
+            } else {
+              console.warn("Elementary school zones data is missing or not loaded.");
+            }
+
+            // Borough Proximity Score
+            let townScore = 0;
+            const borough = geojsonFiles.find(f => f.name === 'borough');
+
+            if (borough && borough.features) {
+              borough.features.forEach(zone => {
+                if (turf.booleanPointInPolygon(parcel, zone)) {
+                  townScore = 100;
+                }
+              });
+            } else {
+              console.warn("Borough boundary data is missing or not loaded.");
+            }
+
+            // Weighted Score Calculation
+            score = (townScore * weights.borough) + (walkingScore * weights.walking) + (schoolScore * weights.school) + (lotSizeScore * weights.lotSize);
+            parcel.properties.Score = score;
+          });
+
+          // Update the source data with scored parcels
+          map.value.getSource(file.name).setData({
+            type: 'FeatureCollection',
+            features: parcels,
+          });
+
+          map.value.addLayer({
+            id: `${file.name}-scored`,
             type: 'fill',
             source: file.name,
             paint: {
-              'fill-outline-color': '#000000',
-              'fill-color': '#fff',
-              'fill-opacity': 0.2,
-            },
-            });
-          
-          map.value.on('click', file.name, (e) => {
+              'fill-color': [
+                'interpolate', ['linear'], ['get', 'Score'],
+                0, '#FF0000',
+                // 50, '#FFFF00',
+                100, '#00FF00'
+              ],
+              'fill-opacity': 0.6
+            }
+          });
+
+          map.value.on('click', `${file.name}-scored`, (e) => {
             selectedProperty.value = e.features[0].properties;
 
             // Zoom to the selected feature
@@ -171,13 +257,14 @@ export function useMap(mapContainer) {
             });
           });
 
-          map.value.on('mouseenter', file.name, () => {
+          map.value.on('mouseenter', `${file.name}-scored`, () => {
             map.value.getCanvas().style.cursor = 'pointer';
           });
-          map.value.on('mouseleave', file.name, () => {
+          map.value.on('mouseleave', `${file.name}-scored`, () => {
             map.value.getCanvas().style.cursor = '';
           });
         }
+
       }
     };
 

@@ -9,7 +9,7 @@
       <p><strong>Owner:</strong> {{ selectedProperty.OWNER1 || 'N/A' }} 
          <span v-if="selectedProperty.OWNER2"> & {{ selectedProperty.OWNER2 }}</span>
       </p>
-      <p><strong>Reason:</strong> {{ selectedProperty.Reason || 'N/A' }}</p>
+      <p><strong>Score:</strong> {{ selectedProperty.Score || 'N/A' }}</p>
     </div>
   </transition>
 </template>

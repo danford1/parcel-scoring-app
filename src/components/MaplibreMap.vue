@@ -16,7 +16,43 @@
           </sl-menu-item>
         </sl-menu>
       </div>
+      <div class="weight-controls">
+        <sl-icon-button name="sliders" label="Adjust Weights" @click="toggleWeightsPopup"></sl-icon-button>
+      </div>
     </div>
+
+    <sl-dialog label="Adjust Scoring Weights" :open="weightsPopupOpen" @sl-request-close="weightsPopupOpen = false">
+
+      <div style="padding: 10px;">
+        <h3>Adjust Scoring Weights</h3>
+        <label>Walking Accessibility: {{ weights.walking.toFixed(2) }}</label>
+        <input type="range" v-model="weights.walking" min="0" max="1" step="0.01" />
+        <label>School Proximity: {{ weights.school.toFixed(2) }}</label>
+        <input type="range" v-model="weights.school" min="0" max="1" step="0.01" />
+        <label>Lot Size: {{ weights.lotSize.toFixed(2) }}</label>
+        <input type="range" v-model="weights.lotSize" min="0" max="1" step="0.01" />
+      </div>
+        
+      <div slot="footer" class="dialog-footer">
+          <sl-button
+            pill
+            variant="default"
+            @click="onCancel"
+          >
+          Cancel
+          </sl-button>
+
+          <sl-button
+            pill
+            variant="primary"
+            :disabled="!canExecute"
+            @click="onExecute"
+          >
+          Save
+          </sl-button>
+          
+      </div>
+    </sl-dialog>
   </div>
 </template>
 
@@ -33,15 +69,21 @@ export default {
     const mapContainer = ref(null);
     const { map, selectedProperty, setMapStyle } = useMap(mapContainer);
     const layersMenuOpen = ref(false);
+    const weightsPopupOpen = ref(false);
     const layers = ref([
-      { id: 'parcels', name: 'Parcels', visible: true },
+      { id: 'parcels-scored', name: 'Parcels', visible: true },
       { id: 'walking-isochrones', name: 'Walking Time', visible: true },
       { id: 'elementary-school-zones', name: 'Elementary School Zones', visible: true },
+      { id: 'borough', name: 'Borough Boundary', visible: true },
     ]);
     const currentStyle = ref('default');
 
     const toggleLayersMenu = () => {
       layersMenuOpen.value = !layersMenuOpen.value;
+    };
+    
+    const toggleWeightsPopup = () => {
+      weightsPopupOpen.value = !weightsPopupOpen.value;
     };
 
     const toggleLayerVisibility = (layerId, visible) => {
@@ -60,8 +102,19 @@ export default {
       currentStyle.value = style;
       setMapStyle(style);
     };
-
-    return { mapContainer, selectedProperty, layersMenuOpen, layers, toggleLayersMenu, toggleLayerVisibility, handleSidebarClose, setMapStyle: setMapStyleWithUpdate, currentStyle };
+    return {
+      mapContainer,
+      selectedProperty,
+      layersMenuOpen,
+      weightsPopupOpen,
+      layers,
+      toggleLayersMenu,
+      toggleWeightsPopup,
+      toggleLayerVisibility,
+      handleSidebarClose,
+      setMapStyle: setMapStyleWithUpdate, 
+      currentStyle
+    };
   },
 };
 </script>
@@ -92,6 +145,21 @@ export default {
   flex-direction: column;
   gap: 10px;
   z-index: 9;
+}
+
+.weight-controls {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
 }
 
 sl-icon-button::part(base) {
