@@ -14,7 +14,7 @@ export default defineConfig({
       }
     })
   ],
-  base: '/open-areas-inventory-map/',
+  base: '/parcel-scoring-app/',
   css: {
     preprocessorOptions: {
       less: {

@@ -34,9 +34,9 @@ export default {
     const { map, selectedProperty, setMapStyle } = useMap(mapContainer);
     const layersMenuOpen = ref(false);
     const layers = ref([
-      { id: 'properties-polygons', name: 'Properties', visible: true },
-      { id: 'landuse-polygons', name: 'Land Use', visible: true },
-      { id: 'borough-border', name: 'Borough Border', visible: true },
+      { id: 'parcels', name: 'Parcels', visible: true },
+      { id: 'walking-isochrones', name: 'Walking Time', visible: true },
+      { id: 'elementary-school-zones', name: 'Elementary School Zones', visible: true },
     ]);
     const currentStyle = ref('default');
 
@@ -54,7 +54,6 @@ export default {
 
     const handleSidebarClose = () => {
       selectedProperty.value = null;
-      map.value.fitBounds([[-75.167558, 40.286788], [-75.084817, 40.343006]]); // Replace with your original extent coordinates
     };
 
     const setMapStyleWithUpdate = (style) => {

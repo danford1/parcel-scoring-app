@@ -9,56 +9,31 @@ export function useMap(mapContainer) {
 
   const geojsonFiles = [
     {
-      name: 'properties',
-      url: '/open-areas-inventory-map/data/properties.geojson',
+      name: 'elementary-school-zones',
+      url: '/parcel-scoring-app/data/elementary_school_zones.geojson',
       layerType: 'fill',
-      styleByAttribute: 'Reason',
+      styleByAttribute: 'name',
       colorMapping: {
-        'Borough owned, Municipal Park, Riparian Buffer': '#ff6600',
-        'Borough owned, Municipal Open Space': '#0066ff',
-        'Bucks County Municipal Open Space Program Easement (Preserved)': '#00cc66',
+        'Doyle': '#0066ff',
+        'Kutz': '#ff6600',
+        'Linden': '#00cc66',
       },
     },
     {
-      name: 'landuse',
-      url: '/open-areas-inventory-map/data/landuse.geojson',
+      name: 'walking-isochrones',
+      url: '/parcel-scoring-app/data/walking_isochrones.geojson',
       layerType: 'fill',
-      styleByAttribute: 'LUP1CATN',
+      styleByAttribute: 'AA_MINS',
       colorMapping: {
-        'Agriculture': '#979c89',
-        'Commercial': '#7e6d42',
-        'Community Services': '#536d37',
-        'Manufacturing': '#6c6c6c',
-        'Military': '#6c6c6c',
-        'Mining': '#6c6c6c',
-        'Parking: Agriculture': '#4f4f4f',
-        'Parking: Commercial': '#4f4f4f',
-        'Parking: Community Services': '#4f4f4f',
-        'Parking: Manufacturing': '#4f4f4f',
-        'Parking: Military': '#4f4f4f',
-        'Parking: Mining': '#4f4f4f',
-        'Parking: Mobile Home': '#4f4f4f',
-        'Parking: Multi-Family': '#4f4f4f',
-        'Parking: Recreation': '#4f4f4f',
-        'Parking: Transportation': '#4f4f4f',
-        'Parking: Utility': '#4f4f4f',
-        'Recreation': '#337759',
-        'Residential: Mobile Home': '#738e7c',
-        'Residential: Multi-Family': '#738e7c',
-        'Residential: Single-Family': '#738e7c',
-        'Transportation': '#6d6d6d',
-        'Utility': '#8f8467',
-        'Vacant': '#8b866d',
-        'Water': '#0090b6',
-        'Wooded': '#225e44',        
+        '10': 'blue',
+        '20': 'green',
+        '30': 'yellow',
+        '40': 'red',        
       },
     },
     {
-      name: 'borough',
-      url: '/open-areas-inventory-map/data/borough.geojson',
-      layerType: 'outline',
-      lineColor: '#000000',
-      lineWidth: 3,
+      name: 'parcels',
+      url: '/parcel-scoring-app/data/parcels.geojson',
     },
   ];
 
@@ -129,7 +104,7 @@ export function useMap(mapContainer) {
       style: mapStyles.default,
       center: [-75.1299, 40.3101],
       zoom: 14,
-      maxBounds: bounds,
+      // maxBounds: bounds,
     });
 
     const nav = new maplibregl.NavigationControl();
@@ -147,7 +122,7 @@ export function useMap(mapContainer) {
 
         if (file.layerType === 'outline') {
           map.value.addLayer({
-            id: `${file.name}-border`,
+            id: file.name,
             type: 'line',
             source: file.name,
             paint: {
@@ -157,7 +132,7 @@ export function useMap(mapContainer) {
           });
         } else if (file.layerType === 'fill') {
           map.value.addLayer({
-            id: `${file.name}-polygons`,
+            id: file.name,
             type: 'fill',
             source: file.name,
             paint: {
@@ -171,25 +146,37 @@ export function useMap(mapContainer) {
               'fill-outline-color': '#000000',
             },
           });
+        }
 
-          if (file.name === 'properties') {
-            map.value.on('click', `${file.name}-polygons`, (e) => {
-              selectedProperty.value = e.features[0].properties;
+        if (file.name === 'parcels') {
 
-              // Zoom to the selected feature
-              const bbox = turf.bbox(e.features[0]);
-              map.value.fitBounds(bbox, {
-                padding: 100,
-              });
+            map.value.addLayer({
+            id: file.name,
+            type: 'fill',
+            source: file.name,
+            paint: {
+              'fill-outline-color': '#000000',
+              'fill-color': '#fff',
+              'fill-opacity': 0.2,
+            },
             });
+          
+          map.value.on('click', file.name, (e) => {
+            selectedProperty.value = e.features[0].properties;
 
-            map.value.on('mouseenter', `${file.name}-polygons`, () => {
-              map.value.getCanvas().style.cursor = 'pointer';
+            // Zoom to the selected feature
+            const bbox = turf.bbox(e.features[0]);
+            map.value.fitBounds(bbox, {
+              padding: 150,
             });
-            map.value.on('mouseleave', `${file.name}-polygons`, () => {
-              map.value.getCanvas().style.cursor = '';
-            });
-          }
+          });
+
+          map.value.on('mouseenter', file.name, () => {
+            map.value.getCanvas().style.cursor = 'pointer';
+          });
+          map.value.on('mouseleave', file.name, () => {
+            map.value.getCanvas().style.cursor = '';
+          });
         }
       }
     };
