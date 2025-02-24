@@ -6,6 +6,7 @@ import * as turf from '@turf/turf';
 export function useMap(mapContainer) {
   const map = ref(null);
   const selectedProperty = ref(null);
+  const weights = ref({ borough: 0.2, walking: 0.4, school: 0.1, lotSize: 0.3 });
 
   const geojsonFiles = [
     {
@@ -105,6 +106,10 @@ export function useMap(mapContainer) {
     },
   };
 
+  const updateWeights = (newWeights) => {
+    weights.value = { ...weights.value, ...newWeights };
+  };
+
   onMounted(async () => {
     map.value = new maplibregl.Map({
       container: mapContainer.value,
@@ -158,9 +163,6 @@ export function useMap(mapContainer) {
         if (file.name === 'parcels') {
           // Fetch additional GeoJSON data for scoring
           const parcels = geojsonData.features;
-
-          // Define weight values (these can later be made user-configurable)
-          const weights = { borough: 0.2, walking: 0.4, school: 0.1, lotSize: 0.3 };
 
           // Function to normalize lot size (Acres)
           const normalizeLotSize = (acres) => Math.min(100, (acres / 5) * 100);
@@ -222,7 +224,7 @@ export function useMap(mapContainer) {
             }
 
             // Weighted Score Calculation
-            score = (townScore * weights.borough) + (walkingScore * weights.walking) + (schoolScore * weights.school) + (lotSizeScore * weights.lotSize);
+            score = (townScore * weights.value.borough) + (walkingScore * weights.value.walking) + (schoolScore * weights.value.school) + (lotSizeScore * weights.value.lotSize);
             parcel.properties.Score = score;
           });
 
@@ -276,5 +278,5 @@ export function useMap(mapContainer) {
     map.value.setStyle(mapStyles[style]);
   };
 
-  return { map, selectedProperty, setMapStyle };
+  return { map, selectedProperty, setMapStyle, weights, updateWeights };
 }

@@ -23,21 +23,33 @@
 
     <sl-dialog label="Adjust Scoring Weights" :open="weightsPopupOpen" @sl-request-close="weightsPopupOpen = false">
 
-      <div style="padding: 10px;">
+      <div>
         <h3>Adjust Scoring Weights</h3>
-        <label>Walking Accessibility: {{ weights.walking.toFixed(2) }}</label>
-        <input type="range" v-model="weights.walking" min="0" max="1" step="0.01" />
-        <label>School Proximity: {{ weights.school.toFixed(2) }}</label>
-        <input type="range" v-model="weights.school" min="0" max="1" step="0.01" />
-        <label>Lot Size: {{ weights.lotSize.toFixed(2) }}</label>
-        <input type="range" v-model="weights.lotSize" min="0" max="1" step="0.01" />
+        <div class="dialog-content">
+          <div class="weight-input-container">
+            <label>Walking Accessibility: {{ weights.walking.toFixed(2) }}</label>
+            <input type="range" v-model="weights.walking" min="0" max="1" step="0.01" />
+          </div>
+          <div class="weight-input-container">
+            <label>School Proximity: {{ weights.school.toFixed(2) }}</label>
+            <input type="range" v-model="weights.school" min="0" max="1" step="0.01" />
+          </div>
+          <div class="weight-input-container">
+            <label>Lot Size: {{ weights.lotSize.toFixed(2) }}</label>
+            <input type="range" v-model="weights.lotSize" min="0" max="1" step="0.01" />
+          </div>
+          <div class="weight-input-container">
+            <label>Borough Proximity: {{ weights.borough.toFixed(2) }}</label>
+            <input type="range" v-model="weights.borough" min="0" max="1" step="0.01" />
+          </div>
+        </div>
       </div>
         
       <div slot="footer" class="dialog-footer">
           <sl-button
             pill
             variant="default"
-            @click="onCancel"
+            @click="weightsPopupOpen = false"
           >
           Cancel
           </sl-button>
@@ -45,8 +57,7 @@
           <sl-button
             pill
             variant="primary"
-            :disabled="!canExecute"
-            @click="onExecute"
+            @click="saveWeights"
           >
           Save
           </sl-button>
@@ -67,7 +78,7 @@ export default {
   },
   setup() {
     const mapContainer = ref(null);
-    const { map, selectedProperty, setMapStyle } = useMap(mapContainer);
+    const { map, selectedProperty, setMapStyle, weights, updateWeights } = useMap(mapContainer);
     const layersMenuOpen = ref(false);
     const weightsPopupOpen = ref(false);
     const layers = ref([
@@ -102,6 +113,12 @@ export default {
       currentStyle.value = style;
       setMapStyle(style);
     };
+
+    const saveWeights = () => {
+      updateWeights(weights.value);
+      weightsPopupOpen.value = false;
+    };
+
     return {
       mapContainer,
       selectedProperty,
@@ -113,7 +130,9 @@ export default {
       toggleLayerVisibility,
       handleSidebarClose,
       setMapStyle: setMapStyleWithUpdate, 
-      currentStyle
+      currentStyle,
+      weights,
+      saveWeights,
     };
   },
 };
@@ -155,6 +174,19 @@ export default {
   flex-direction: column;
   gap: 10px;
   z-index: 9;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  color: black;
+
+  .weight-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
 }
 
 .dialog-footer {
